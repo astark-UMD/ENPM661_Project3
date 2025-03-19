@@ -5,8 +5,9 @@ import copy
 
 # Thoe node object for every pixel in the map.
 class Node:
-    def __init__(self, Node_Cost, Node_x, Node_y, Node_theta, Parent_Node_x, Parent_Node_y, Parent_Node_theta):
+    def __init__(self, Node_Cost, Node_Cost_est, Node_x, Node_y, Node_theta, Parent_Node_x, Parent_Node_y, Parent_Node_theta):
         self.Node_Cost = Node_Cost # The cost to reach this node.
+        self.Node_Cost_est = Node_Cost_est # The estimated cost to the goal.
         self.Node_x = Node_x # The node's x location.
         self.Node_y = Node_y # The node's y location. 
         self.Node_theta = int(Node_theta)
@@ -17,38 +18,39 @@ class Node:
     # This method allows the heapq module to compare Node objects by their cost when sorting.
     # This ensures that the node with the smallest cost is popped first.
     def __lt__(self, other):
-        return self.Node_Cost < other.Node_Cost 
+        return self.Node_Cost + self.Node_Cost_est < other.Node_Cost + other.Node_Cost_est
 
 # Each of the eight move functions takes in a node, copies its information
 # to generate the basis of the new node as a result of movement, 
 # updates the cost of the new node to execute that movement from the 
 # parent node, and updates the position of the new node.
 
-def move_major_left(given_Node, step_size, scale):
-    return create_new_node(given_Node, step_size, 60, scale)
+def move_major_left(given_Node, step_size, scale, goal_x, goal_y):
+    return create_new_node(given_Node, step_size, 60, scale, goal_x, goal_y)
 
-def move_minor_left(given_Node, step_size, scale):
-    return create_new_node(given_Node, step_size, 30, scale)
+def move_minor_left(given_Node, step_size, scale, goal_x, goal_y):
+    return create_new_node(given_Node, step_size, 30, scale, goal_x, goal_y)
 
-def move_straight(given_Node, step_size, scale):
-    return create_new_node(given_Node, step_size, 0, scale)
+def move_straight(given_Node, step_size, scale, goal_x, goal_y):
+    return create_new_node(given_Node, step_size, 0, scale, goal_x, goal_y)
 
-def move_minor_right(given_Node, step_size, scale):
-    return create_new_node(given_Node, step_size, -30, scale)
+def move_minor_right(given_Node, step_size, scale, goal_x, goal_y):
+    return create_new_node(given_Node, step_size, -30, scale, goal_x, goal_y)
 
-def move_major_right(given_Node, step_size, scale):
-    return create_new_node(given_Node, step_size, -60, scale)
+def move_major_right(given_Node, step_size, scale, goal_x, goal_y):
+    return create_new_node(given_Node, step_size, -60, scale, goal_x, goal_y)
 
 # create_new_node is the main body of each of the move functions. 
-def create_new_node(given_Node, step_size, theta, scale):
+def create_new_node(given_Node, step_size, theta, scale, goal_x, goal_y):
     newNode = copy.deepcopy(given_Node)
     newNode.Parent_Node_x = newNode.Node_x
     newNode.Parent_Node_y = newNode.Node_y
     newNode.Parent_Node_theta = newNode.Node_theta
-    newNode.Node_Cost += step_size
+    newNode.Node_Cost += step_size*scale
     newNode.Node_x = round((newNode.Node_x + step_size*np.cos(np.deg2rad(newNode.Node_theta + theta))*scale)*2)/2 
     newNode.Node_y = round((newNode.Node_y + step_size*np.sin(np.deg2rad(newNode.Node_theta + theta))*scale)*2)/2
     newNode.Node_theta = int(newNode.Node_theta + theta)
+    newNode.Node_Cost_est = np.sqrt((newNode.Node_x - goal_x)**2 + (newNode.Node_y - goal_y)**2)
     return newNode
 
 def angle_to_index(angle):
@@ -276,7 +278,7 @@ def goal_check(x, y, theta, end, scale):
     dis = np.sqrt(((end_x - x))**2 + (end_y - y)**2)
     dif_theta = np.abs(end_theta - theta)
     # Check if position and angle is within thresholds. 
-    if dis < 1.5*scale and dif_theta < 15:
+    if dis < 1.5*scale:# and dif_theta < 15:
         return True
     else:
         return False
@@ -302,7 +304,7 @@ def A_star_search(map, obstacles, start, end, sf, step_size):
     # video_out = cv2.VideoWriter(video_filename, fourcc, fps, (width, height))
     
     # Create the start node.
-    start_node = Node(0, start[0], start[1], start[2], start[0], start[1], start[2])
+    start_node = Node(0, 0, start[0], start[1], start[2], start[0], start[1], start[2])
     
     open_set = []  # Priority queue. Used to extract nodes with smallest cost.
     heapq.heappush(open_set, start_node)
@@ -367,11 +369,17 @@ def A_star_search(map, obstacles, start, end, sf, step_size):
         # If the goal has been reached, set the end_node and the current_node and
         # get the final path.
         if goal_check(current_x, current_y, current_theta, end, sf):
-            path = get_final_path(visited, current_node)
+            print("Goal Reached!")
+            path = get_final_path(visited, current_node, sf)
+            print(path)
 
             # For each pixel in the path, draw it as white and save a video frame.
-            for x, y in path:
-                map[y, x] = [255, 255, 255]
+            for i in range(len(path) - 1):
+                x1, y1 = path[i]
+                x2, y2 = path[i + 1]
+                cv2.line(map, (int(x1), int(y1)), (int(x2), int(y2)), (255, 0, 255), 2)
+                cv2.imshow("Map", map)
+                cv2.waitKey(0)
                 # video_out.write(map)
 
             # Release the video file.
@@ -383,7 +391,7 @@ def A_star_search(map, obstacles, start, end, sf, step_size):
         # the newNode generated from moving in each direction.
         for move in directions:
             # Get newNode from current move.
-            newNode = move(current_node, step_size, sf)
+            newNode = move(current_node, step_size, sf, end_x, end_y)
             
             if valid_line(current_x, current_y, newNode.Node_x, newNode.Node_y, map.shape, obstacles): # Check that it isn't in an obstacle.
             # if valid_move(newNode.Node_x, newNode.Node_y, map.shape, obstacles):
@@ -404,7 +412,7 @@ def A_star_search(map, obstacles, start, end, sf, step_size):
                             visited[node_key] = newNode
                             heapq.heappush(open_set, newNode)
                 
-                cv2.line(map, (int(newNode.Node_x), int(newNode.Node_y)),(int(current_node.Node_x), int(current_node.Node_y)),(255,255,255),1)
+                cv2.line(map, (int(newNode.Node_x), int(newNode.Node_y)),(int(current_node.Node_x), int(current_node.Node_y)),(155,155,155),1)
                 cv2.imshow("Map", map)
                 cv2.waitKey(0) 
     
@@ -417,22 +425,28 @@ def A_star_search(map, obstacles, start, end, sf, step_size):
     return map
 
 # get_final_path backtracks the position to find the path. 
-def get_final_path(visited, end_node):
+def get_final_path(visited, end_node, sf):
     # create a list of x and y positions. 
     path_xys = []
-    current_x, current_y = end_node.Node_x, end_node.Node_y
+    current_x, current_y, current_theta = end_node.Node_x, end_node.Node_y, end_node.Node_theta
 
-    while (current_x, current_y) in visited:  # Ensure the node exists in visited
+    node_key = (int(current_y /sf/ 0.5), int(current_x /sf/ 0.5), angle_to_index(current_theta))
+
+    while node_key in visited:  # Ensure the node exists in visited
+        print('iter')
         path_xys.append((current_x, current_y)) # Add the current x and y.
         # Get the current parents positon. 
-        parent_x, parent_y = visited[(current_x, current_y)].Parent_Node_x, visited[(current_x, current_y)].Parent_Node_y
+        parent_x = visited[node_key].Parent_Node_x
+        parent_y = visited[node_key].Parent_Node_y
+        parent_theta = visited[node_key].Parent_Node_theta
         
         # Stop when we reach the starting node. 
-        if (current_x, current_y) == (parent_x, parent_y):
+        if (current_x, current_y, current_theta) == (parent_x, parent_y, parent_theta):
             break
         
         # Update for the next iteration.
-        current_x, current_y = parent_x, parent_y
+        current_x, current_y, current_theta = parent_x, parent_y, parent_theta
+        node_key = (int(current_y /sf/ 0.5), int(current_x /sf/ 0.5), angle_to_index(current_theta))
 
     path_xys.reverse()  # Reverse to get the correct order
     return path_xys
@@ -462,11 +476,11 @@ def main():
     start_x = 25*sf
     start_y = 25*sf
     start_theta = 0
-    end_x = 570*sf
-    end_y = 220*sf
+    end_x = 50*sf
+    end_y = 25*sf
     end_theta = 150
 
-    step_size = 20
+    step_size = 5          
 
     print("Planning Path...")
 
