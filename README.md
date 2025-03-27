@@ -12,6 +12,7 @@
 - heapq
 - copy
 - time
+- functools
 
 **Video Output Explanation**:
 - The video shows the node exploration and the generation of the optimal path. 
