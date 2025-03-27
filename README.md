@@ -1,6 +1,6 @@
 # ENPM661_Project3
 
-- Aiden Stark (UID : 113907074)
+- Aidan Stark (UID : 113907074)
 - Masum Thakkar (UID : 121229076)
 - Indraneel Mulakaloori (UID : 121377715)
 
@@ -31,7 +31,7 @@ corners due to the large step size.
 
 **Color Key**:
 - Black = Unexplored Free Space
-- Dark Green = Explored Free Space
+- Gray = Explored Free Space
 - Red = Obstacle Space
 - Orange = Clearance Space Around Obstacles and Walls
 - Magenta = Start Point
