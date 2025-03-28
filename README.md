@@ -1,8 +1,8 @@
 # ENPM661_Project3
 
-- Aidan Stark (UID : 113907074)
-- Masum Thakkar (UID : 121229076)
-- Indraneel Mulakaloori (UID : 121377715)
+- Aidan Stark (UID : 113907074, Directory ID: thlogo)
+- Masum Thakkar (UID : 121229076, Directory ID: Masumth)
+- Indraneel Mulakaloori (UID : 121377715, Directory ID: neelmvss)
 
 
 
