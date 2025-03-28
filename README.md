@@ -77,5 +77,5 @@ In the zip file attached to our submission, we have provided three videos that d
 the solution differs based upon the step size given. Each video uses the same start and goal 
 positions and orientations. 
 
-Link To Code on GitHub:
+Link To Code on GitHub: https://github.com/astark-UMD/ENPM661_Project3.git
 
